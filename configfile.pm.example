@@ -1,0 +1,13 @@
+package configfile;
+use strict;
+use warnings;
+use Exporter;
+our @ISA = 'Exporter';
+our @EXPORT = qw($ua $email $pass $download_dir);
+
+#================== user defined variables ===================
+our $email = 'user@gmail.com'; # login email for vk
+our $pass = 'password'; # pass for vk
+our $download_dir = '/Users/fzeulf/Downloads/vk_downloads'; # please use full path, without ~ and so on
+our $ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.120 Safari/537.37'; # User Agent string
+#=============================================================
