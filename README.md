@@ -13,10 +13,10 @@ All you need is curl programm installed for your OS
 3. `cp configfile.pm.example configfile.pm`
 4. set in the configfile.pm these variables
 
-our $email = 'user@gmail.com'; 
-our $pass = 'password'; 
-our $download_dir = '/Users/fzeulf/Downloads/vk_downloads';
-our $ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.120 Safari/537.37';
+    our $email = 'user@gmail.com'; 
+    our $pass = 'password'; 
+    our $download_dir = '/Users/fzeulf/Downloads/vk_downloads';
+    our $ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.120 Safari/537.37';
 
 * $email - registration email
 * $pass - registration password
@@ -33,6 +33,9 @@ our $ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KH
     ./vkmusic_downloader.pl -s astrix
     Search by artist name
     ./vkmusic_downloader.pl -s astrix -a
+
+Script write song list, and you could chose what download, by digits.
+Multiple select is allowed through comma or dash.
 
 ### Change log
 **Version 1.0**
