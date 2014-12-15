@@ -15,30 +15,10 @@ $Term::ANSIColor::AUTORESET = 1;
 my $VERSION = "1.0 (Dec 2014)";
 my ($help, $curl_opts, $ch_curl, $curlout, $auth_loc, $user_id, $search, $search_artist, $all_user_music);
 my $debug = 0;
-GetOptions ('h|help' => \$help, 'd|debug' => \$debug, 's|search=s' => \$search, 'a|artist' => \$search_artist, 'u|usermusic' => \$all_user_music) or exit;
+GetOptions ('h|help' => \$help, 'd|debug' => \$debug, 's|search=s' => \$search, 'a|artist' => \$search_artist, 'u|usermusic' => \$all_user_music) or _print_help();
 
 print "\nWelcome to "; print BOLD RED "VKMusic downloader"; print " $VERSION\n";
-if ($help) {
-    print <<endOfTxt;
-
-        usage: $0 [OPTIONS] 
-
-        OPTIONS
-            -s,--search name - search by given name
-            -a,--artist - modificator for search by artist name
-            -d,--debug - enable debug output
-            -u,--usermusic - show all user music
-            -h,-?,--help - Print this help and exit
-
-        EXAMPLES
-            Search by music name
-            $0 -s 'Candy Shop'
-            Search by artist name
-            $0 -s astrix -a
-
-endOfTxt
-    exit;
-}
+_print_help() if ($help);
 
 $ch_curl = `which curl`;
 chomp ($ch_curl);
@@ -61,10 +41,11 @@ if (($search_artist) && (not $search)) {
     print RED "-a could be used only with -s option.\n" and exit;
 }
 
-my %html_codes = ( # not all of them, but more popular
+my %html_codes = ( # not all of them, but more popular. NOTE: Some of them replaced by another symbols, due OS console restrictions
     "&quot;" => '"', "&amp;" => '&', "&#32;" => ' ', "&#33;" => '!', "&#34;" => '"', "&#35;" => '#', "&#36;" => '$',
-    "&#37;" => '%', "&#38;" => '&', "&#39;" => "'", "&#40;" => '(', "&#41;" => ')', "&#42;" => '*',
-    "&#43;" => '+', "&#44;" => ',', "&#45;" => '-', "&#46;" => '.', "&#47;" => '/', "&gt;" => '>', "&lt;" => '<', "&#123;" => '{',
+    "&#37;" => '%', "&#38;" => '&', "&#39;" => ".", "&#40;" => '(', "&#41;" => ')', "&#42;" => '*',
+    "&#43;" => '+', "&#44;" => ',', "&#45;" => '-', "&#46;" => '.', "&#47;" => '|', "&#92;" => "|", "&#092;" => "|",
+    "&gt;" => '>', "&lt;" => '<', "&#123;" => '{',
     "&#124;" => '|', "&#125;" => '}', "&#126;" => '~', "&#178;" => '²', "&#953;" => 'ι', "&#9824;" => '♠', "&#9829;" => '♥',
     "&#9827;" => '♣', "&#9830;" => '♦',
 );
@@ -140,8 +121,11 @@ foreach my $string (@music_html) {
                 if ($name =~ m/(.*[^\ ])\s+$/) {
                     $name = $1;
                 }
-                my $str = sprintf ("[%d] %-20s - %-20s", $item, $artist, $name);
-                print CYAN "$str\n";
+                my $artist_pr = sprintf ("%-20s - ", $artist);
+                my $name_pr = sprintf ("%-20s", $name);
+                print CYAN "[$item] ";
+                print WHITE "$artist_pr";
+                print BOLD BLUE "$name_pr\n";
                 $music_base[$item] = ["$artist - $name", "$music_src"];
                 $item++;
             }
@@ -208,6 +192,28 @@ foreach my $music (@ch_selected) {
 }
 
 unlink $cookie_fname;
+
+sub _print_help {
+    print <<endOfTxt;
+
+        usage: $0 [OPTIONS] 
+
+        OPTIONS
+            -s,--search name - search by given name
+            -a,--artist - modificator for search by artist name
+            -d,--debug - enable debug output
+            -u,--usermusic - show all user music
+            -h,-?,--help - Print this help and exit
+
+        EXAMPLES
+            Search by music name
+            $0 -s 'Candy Shop'
+            Search by artist name
+            $0 -s astrix -a
+
+endOfTxt
+    exit;
+}
 
 sub _print_ok_fail {
     my $selector = shift;
