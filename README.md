@@ -30,13 +30,19 @@ All you need is curl programm installed for your OS
     -d,--debug - enable debug output
     -h,-?,--help - Print this help and exit
 
-    Search by music name
-    ./vkmusic_downloader.pl -s astrix
-    Search by artist name
+    Search by music name:
+    ./vkmusic_downloader.pl -s 'Candy Shop'
+    Search by artist name:
     ./vkmusic_downloader.pl -s astrix -a
 
 Script write song list, and you could chose what download, by digits.
 Multiple select is allowed through comma or dash.
+
+### Notes
+
+Was tested under:
+- MAC OS X
+- Windows (Cygwin + curl compilation from src)
 
 ### Change log
 **Version 1.0**

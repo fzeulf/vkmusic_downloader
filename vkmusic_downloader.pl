@@ -121,19 +121,20 @@ foreach my $string (@music_html) {
                 if ($name =~ m/(.*[^\ ])\s+$/) {
                     $name = $1;
                 }
-                my $artist_pr = sprintf ("%-20s - ", $artist);
-                my $name_pr = sprintf ("%-20s", $name);
-                print CYAN "[$item] ";
-                print WHITE "$artist_pr";
-                print BOLD BLUE "$name_pr\n";
                 $music_base[$item] = ["$artist - $name", "$music_src"];
+            }
+            if ($string =~ m/<div\s+class="duration fl_r">(\d+:\d+)/) {
+                _print_music_string($item, $artist, $name, $1);
                 $item++;
             }
         } else {
             $music_src = undef;
         }
     } else {
-
+        @music_base = _json_parser ($string);
+        for (my $i = 1; $i <= $#music_base; $i++) {
+            _print_music_string($i, ${$music_base[$i]}[0], "", ${$music_base[$i]}[2]);
+        }
     }
 }
 exit unless _print_ok_fail ($user_id, "------------------------------------------------------------------------", "Fail: Can't parse vk.com main page, may be it was changed");
@@ -239,6 +240,21 @@ sub _print_debug {
     print YELLOW "-" x 80 . "\n";
 }
 
+sub _print_music_string {
+    my $item = shift;
+    my $artist = shift;
+    my $name = shift;
+    my $duration = shift;
+
+    my $artist_pr = sprintf ("%-20s - ", $artist);
+    my $name_pr = sprintf ("%-20s", $name);
+    print CYAN "[$item] ";
+    print WHITE "$artist_pr";
+    print BOLD BLUE "$name_pr";
+    print CYAN " ($duration)\n";
+
+}
+
 sub _parser {
     my $string = shift;
     my $name;
@@ -304,4 +320,9 @@ sub _tags_parser {
         }
     }
     return $text;
+}
+
+sub _json_parser {
+    my $string = shift;
+    return;
 }
