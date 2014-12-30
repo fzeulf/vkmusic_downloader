@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# written by fzeulf
 # description: script for vk music download
 # info: config must be in the configfile.pm 
 
@@ -107,7 +108,7 @@ my $item = 1;
 foreach my $string (@music_html) {
     $string = decode('cp1251', encode('utf8', $string));
     if (not $all_user_music) {
-        if ($string =~ m/<input\s+type="hidden"\s+id="audio_info\d+\_\d+"\s+value="([^\?]+)/) {
+        if ($string =~ m/<input\s+type="hidden"\s+id="audio_info\S+"\s+value="([^\?]+)/) {
             $music_src = $1;
         }
         if ($music_src) {
@@ -123,13 +124,11 @@ foreach my $string (@music_html) {
                 }
                 $music_base[$item] = ["$artist - $name", "$music_src"];
             }
-            if ($string =~ m/<div\s+class="duration fl_r">(\d+:\d+)/) {
+            if ($string =~ m/<div\s+class="duration\s+fl_r">(.+)<\/div>/) {
                 _print_music_string($item, $artist, $name, $1);
                 $item++;
             }
-        } else {
-            $music_src = undef;
-        }
+        } 
     } else {
         @music_base = _json_parser ($string);
         for (my $i = 1; $i <= $#music_base; $i++) {
@@ -258,13 +257,13 @@ sub _print_music_string {
 sub _parser {
     my $string = shift;
     my $name;
-    #print MAGENTA "\n-$string-";
-    if ($string =~ m/^(<span>.+)/) {
-        #print "\nSPAN-$1-\n";
+#    print MAGENTA "\n-$string-";
+    if ($string =~ m/(<span>.+)/) {
         $name = _tags_parser ("<", ">", "</span><span", $1);
-    } elsif ($string =~ m/^<a[^>]*>(.+)/) {
-        #print "\nA-$1-\n";
+#        print "\nSPAN-$1-$name\n";
+    } elsif ($string =~ m/<a[^>]*>(.+)/) {
         $name = _tags_parser ("<", ">", "</a>", $1);
+#        print "\nA-$1-$name\n";
     } elsif ($string =~ m/([^\<]*)/) {
         $name = $1;
     } else {
