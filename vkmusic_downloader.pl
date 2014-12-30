@@ -119,6 +119,9 @@ foreach my $string (@music_html) {
                     $artist =~ s/$symbol/$html_codes{$symbol}/g;
                     $name =~ s/$symbol/$html_codes{$symbol}/g;
                 }
+                if ($artist =~ m/^\s*(.+)\s*$/) {
+                    $artist = $1;
+                }
                 if ($name =~ m/(.*[^\ ])\s+$/) {
                     $name = $1;
                 }
