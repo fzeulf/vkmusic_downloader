@@ -130,6 +130,7 @@ foreach my $string (@music_html) {
             if ($string =~ m/<div\s+class="duration\s+fl_r">(.+)<\/div>/) {
                 _print_music_string($item, $artist, $name, $1);
                 $item++;
+                $music_src = undef;
             }
         } 
     } else {
