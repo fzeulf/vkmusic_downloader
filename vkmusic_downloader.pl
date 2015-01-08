@@ -116,7 +116,7 @@ foreach my $string (@music_html) {
         if ($music_src) {
             if ($string =~ m/<a\s+href="\/search\?c\[q\]=.*\s+name:\s+\'(.+)\'.*<span\sclass="title">(.*)/) {
                 $artist = $1;
-                $name = _parser($2);
+                $name = _html_parser($2);
                 foreach my $symbol (keys %html_codes) {
                     $artist =~ s/$symbol/$html_codes{$symbol}/g;
                     $name =~ s/$symbol/$html_codes{$symbol}/g;
@@ -135,7 +135,7 @@ foreach my $string (@music_html) {
             }
             if ($string =~ m/<div\s+class="duration\s+fl_r">(.+)<\/div>/) {
                 $music_base[$item]{'dur'} = "$1";
-                _print_music_string($item, $artist, $name, $1);
+                _print_music_string($item, $artist, $name, $1, 1);
                 $item++;
                 $music_src = undef;
             }
@@ -143,7 +143,7 @@ foreach my $string (@music_html) {
     } else {
         @music_base = _json_parser ($string);
         for (my $i = 1; $i <= $#music_base; $i++) {
-                _print_music_string($i, $music_base[$i]{'artist'}, $music_base[$i]{'song_name'}, $music_base[$i]{'dur'});
+                _print_music_string($i, $music_base[$i]{'artist'}, $music_base[$i]{'song_name'}, $music_base[$i]{'dur'}, 1);
             }
         }
     }
@@ -253,17 +253,19 @@ sub _print_music_string {
     my $artist = shift;
     my $name = shift;
     my $duration = shift;
+    my $new_line = shift;
 
     my $artist_pr = sprintf ("%-20s - ", $artist);
     my $name_pr = sprintf ("%-20s", $name);
-    print CYAN "\n[$item] ";
+    print CYAN "[$item] ";
     print WHITE "$artist_pr";
     print BOLD BLUE "$name_pr";
     print CYAN " ($duration)";
+    print "\n" if $new_line;
 
 }
 
-sub _parser {
+sub _html_parser {
     my $string = shift;
     my $name;
 #    print MAGENTA "\n-$string-";
@@ -334,19 +336,35 @@ sub _json_parser {
     my $string = shift;
     $DB::single=1;
     my @string = split (//, $string);
-    my ($block_start, @music_base, $param_start);
+    my ($block_start, @music_base, $param_start, $param, @block_params, $prev_smb);
+    my $music_num = 1;
     foreach my $smb (@string) {
-        if ($smb eq "[") {
+        if (($smb eq "[")&&(not $param_start)&&(not $block_start)) {
             $block_start = 1;
-        }
-        if (($block_start)&&($smb eq "'")) {
-            $param_start = 1;
-
-        } elsif (($block_start)&&($smb eq "]")) {
-        } else {
+        } elsif (($smb eq "]")&&(not $param_start)&&($block_start)) {
+            last if $prev_smb eq "]";
+            $music_base[$music_num] = {
+                'artist' => "$block_params[5]",
+                'song_name' => "$block_params[6]", 
+                'src' => "$block_params[2]",
+                'dur' => "$block_params[4]",
+            };
+            $music_num++;
             $block_start = 0;
+            @block_params = ();
         }
-        
+        if (($block_start)&&($smb eq "'")&&(not $param_start)) {
+            $param_start = 1;
+            next;
+        } elsif (($block_start)&&($param_start)&&($smb eq "'")) {
+            push (@block_params, $param);
+            $param_start = 0;
+            $param = "";
+        }
+        if (($block_start)&&($param_start)) {
+            $param .= $smb;
+        }
+        $prev_smb = $smb;
     }
-    return;
+    return @music_base;
 }
