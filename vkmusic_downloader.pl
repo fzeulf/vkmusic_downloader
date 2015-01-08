@@ -115,12 +115,8 @@ foreach my $string (@music_html) {
         }
         if ($music_src) {
             if ($string =~ m/<a\s+href="\/search\?c\[q\]=.*\s+name:\s+\'(.+)\'.*<span\sclass="title">(.*)/) {
-                $artist = $1;
-                $name = _html_parser($2);
-                foreach my $symbol (keys %html_codes) {
-                    $artist =~ s/$symbol/$html_codes{$symbol}/g;
-                    $name =~ s/$symbol/$html_codes{$symbol}/g;
-                }
+                $artist = _convert_symbols($1);
+                $name = _convert_symbols(_html_parser($2));
                 if ($artist =~ m/^\s*(.+)\s*$/) {
                     $artist = $1;
                 }
@@ -201,6 +197,14 @@ foreach my $music_num (@ch_selected) {
 }
 
 #unlink $cookie_fname;
+
+sub _convert_symbols {
+    my $string = shift;
+    foreach my $symbol (keys %html_codes) {
+        $string =~ s/$symbol/$html_codes{$symbol}/g;
+    }
+    return $string;
+}
 
 sub _print_help {
     print <<endOfTxt;
@@ -334,18 +338,23 @@ sub _tags_parser {
 
 sub _json_parser {
     my $string = shift;
-    $DB::single=1;
+#    $DB::single=1;
     my @string = split (//, $string);
-    my ($block_start, @music_base, $param_start, $param, @block_params, $prev_smb);
+    my ($block_start, @music_base, $param_start, $param, @block_params);
     my $music_num = 1;
+    my $prev_smb = "";
     foreach my $smb (@string) {
+        if (($smb eq "]")&&($prev_smb eq "]")) {
+            last;
+        }
         if (($smb eq "[")&&(not $param_start)&&(not $block_start)) {
             $block_start = 1;
         } elsif (($smb eq "]")&&(not $param_start)&&($block_start)) {
-            last if $prev_smb eq "]";
+            my $artist = _convert_symbols($block_params[5]);
+            my $song_name = _convert_symbols($block_params[6]);
             $music_base[$music_num] = {
-                'artist' => "$block_params[5]",
-                'song_name' => "$block_params[6]", 
+                'artist' => "$artist",
+                'song_name' => "$song_name", 
                 'src' => "$block_params[2]",
                 'dur' => "$block_params[4]",
             };
