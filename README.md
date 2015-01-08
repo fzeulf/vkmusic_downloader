@@ -35,16 +35,36 @@ All you need is curl programm installed for your OS
     Search by artist name:
     ./vkmusic_downloader.pl -s astrix -a
 
-Script write song list, and you could chose what download, by digits.
-Multiple select is allowed through comma or dash.
+Output will be like this:
+
+```
+[1] Astrix               - Beyond The Senses.   (7:45)
+[2] Astrix               - Sex Style            (6:50)
+[3] Astrix               - Antiwar (Red Means Distortion 2010) (7:36)
+```
+
+Where:
+
+* **[1]** - consecutive number
+* **Astrix** - artist name
+* **Beyond The Senses.** - song name
+* **(7:45)** - song duration
+
+Then you could select any particular song or number of songs (by consecutive number) write and push enter:
+- digits through comma (1,3,4,10)
+- digits through dash (1-12)
+- * or all for downloading whole list
+- h for help.
 
 ### Notes
 
-Was tested under:
+Was tested for:
 - MAC OS X
 - Windows (Cygwin + curl compilation from src)
 
 ### Change log
 **Version 1.0**
 
-- initial version
+- Shows first 50 user songs
+- Can search by music name or by artist name
+- Can download any count of searched songs

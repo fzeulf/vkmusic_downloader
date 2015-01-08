@@ -12,8 +12,9 @@ use Getopt::Long;
 use Encode qw(decode encode);
 use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
+use Data::Dumper;
 
-my $VERSION = "1.0 (Dec 2014)";
+my $VERSION = "1.1 (Jan 2014)";
 my ($help, $curl_opts, $ch_curl, $curlout, $auth_loc, $user_id, $search, $search_artist, $all_user_music);
 my $debug = 0;
 GetOptions ('h|help' => \$help, 'd|debug' => \$debug, 's|search=s' => \$search, 'a|artist' => \$search_artist, 'u|usermusic' => \$all_user_music) or _print_help();
@@ -97,7 +98,7 @@ if ($search_artist) {
 } elsif ($search) {
         $curlout = `curl -v -b $cookie_fname -A "$ua" -H "Accept-Language:en-US,en;q=0.8" -X POST -d "act=search&al=1&autocomplete=1&gid=0&id=$user_id&offset=0&q=$search&sort=0" "https://vk.com/audio" 2>&1`;
 } elsif ($all_user_music) {
-    $curlout = `curl -v -b $cookie_fname -A "$ua" -H "Accept-Language:en-US,en;q=0.8" -X POST -d "act=load_audios_silent&al=1&gid=0&id=$user_id&please_dont_ddos=1" "https://vk.com/audio" 2>&1`;
+    $curlout = `curl -s -b $cookie_fname -A "$ua" -H "Accept-Language:en-US,en;q=0.8" -X POST -d "act=load_audios_silent&al=1&gid=0&id=$user_id&please_dont_ddos=1" "https://vk.com/audio" 2>&1`;
 } else {
     $curlout = `curl -v -b $cookie_fname -A "$ua" -H "Accept-Language:en-US,en;q=0.8" "https://vk.com/audios$user_id" 2>&1`;
 }
@@ -128,6 +129,7 @@ foreach my $string (@music_html) {
                 $music_base[$item] = ["$artist - $name", "$music_src"];
             }
             if ($string =~ m/<div\s+class="duration\s+fl_r">(.+)<\/div>/) {
+                push (@{$music_base[$item]}, $1);
                 _print_music_string($item, $artist, $name, $1);
                 $item++;
                 $music_src = undef;
@@ -180,7 +182,6 @@ if (scalar(@ch_selected) == 0) {
     print GREEN "Downloading:\n";
 }
 my %replaced_sym = ('/' => '.', '\s+' => ' ', "'" => "");
-#$DB::single=1;
 foreach my $music (@ch_selected) {
     my $str = sprintf ("[%d] %-s", $music, ${$music_base[$music]}[0]);
     print CYAN "\t$str";
@@ -195,7 +196,7 @@ foreach my $music (@ch_selected) {
     _print_ok_fail ($file_chk, " OK", " Fail: Cant't download $!");
 }
 
-unlink $cookie_fname;
+#unlink $cookie_fname;
 
 sub _print_help {
     print <<endOfTxt;
@@ -327,5 +328,6 @@ sub _tags_parser {
 
 sub _json_parser {
     my $string = shift;
+#    $DB::single=1;
     return;
 }
