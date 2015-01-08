@@ -28,8 +28,13 @@ All you need is curl programm installed for your OS
     -s,--search name - search by given name
     -a,--artist - modificator for search by artist name
     -d,--debug - enable debug output
+    -u,--usermusic - show all user music
     -h,-?,--help - Print this help and exit
 
+    Show first 50 user music:
+    ./vkmusic_downloader.pl
+    Show all user added music:
+    ./vkmusic_downloader.pl -u
     Search by music name:
     ./vkmusic_downloader.pl -s 'Candy Shop'
     Search by artist name:
@@ -63,6 +68,10 @@ Was tested for:
 - Windows (Cygwin + curl compilation from src)
 
 ### Change log
+**Version 1.1**
+
+- Show all user added music
+
 **Version 1.0**
 
 - Shows first 50 user songs
