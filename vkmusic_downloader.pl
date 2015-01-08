@@ -12,6 +12,7 @@ use Getopt::Long;
 use Encode qw(decode encode);
 use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
+use constant DELIM_S => '-' x 80;
 use Data::Dumper;
 
 my $VERSION = "1.1 (Jan 2014)";
@@ -126,10 +127,14 @@ foreach my $string (@music_html) {
                 if ($name =~ m/(.*[^\ ])\s+$/) {
                     $name = $1;
                 }
-                $music_base[$item] = ["$artist - $name", "$music_src"];
+                $music_base[$item] = {
+                    'artist' => "$artist",
+                    'song_name' => "$name", 
+                    'src' => "$music_src"
+                };
             }
             if ($string =~ m/<div\s+class="duration\s+fl_r">(.+)<\/div>/) {
-                push (@{$music_base[$item]}, $1);
+                $music_base[$item]{'dur'} = "$1";
                 _print_music_string($item, $artist, $name, $1);
                 $item++;
                 $music_src = undef;
@@ -138,34 +143,34 @@ foreach my $string (@music_html) {
     } else {
         @music_base = _json_parser ($string);
         for (my $i = 1; $i <= $#music_base; $i++) {
-            _print_music_string($i, ${$music_base[$i]}[0], "", ${$music_base[$i]}[2]);
+                _print_music_string($i, $music_base[$i]{'artist'}, $music_base[$i]{'song_name'}, $music_base[$i]{'dur'});
+            }
         }
     }
-}
-exit unless _print_ok_fail ($user_id, "------------------------------------------------------------------------", "Fail: Can't parse vk.com main page, may be it was changed");
+    exit unless _print_ok_fail ($user_id, "\n". DELIM_S, "Fail: Can't parse vk.com main page, may be it was changed");
 
-print GREEN "Select song number (h for help) [1]: ";
-my $ch_input = 0;
-my @selected;
-until ($ch_input) {
-    chomp(my $selected = <STDIN>);
-    if (not $selected) {
-        push (@selected, 1); 
-        $ch_input = 1;
-    } elsif ($selected eq "q") {
-        exit;
-    } elsif (($selected eq "*")||($selected eq "all")) {
-        @selected = 1 .. scalar(@music_base);
-        $ch_input = 1;
-    } elsif ($selected eq "h") {
-        print "Define number i.e. 1 or numbers through comma i.e 1,2,3, or list 1-5, * / all - select all, q - exit\n";
-    } elsif ($selected =~ m/(\d+)-(\d+)/) {
-        @selected = $1 .. $2;
-        $ch_input = 1;
-    } elsif ($selected =~ m/\d+,\d+/) {
-        @selected = split (/,/, join(',', $selected));
-        $ch_input = 1;
-    } elsif ($selected =~ m/\d+/) {
+    print GREEN "Select song number (h for help) [1]: ";
+    my $ch_input = 0;
+    my @selected;
+    until ($ch_input) {
+        chomp(my $selected = <STDIN>);
+        if (not $selected) {
+            push (@selected, 1); 
+            $ch_input = 1;
+        } elsif ($selected eq "q") {
+            exit;
+        } elsif (($selected eq "*")||($selected eq "all")) {
+            @selected = 1 .. scalar(@music_base);
+            $ch_input = 1;
+        } elsif ($selected eq "h") {
+            print "Define number i.e. 1 or numbers through comma i.e 1,2,3, or list 1-5, * / all - select all, q - exit\n";
+        } elsif ($selected =~ m/(\d+)-(\d+)/) {
+            @selected = $1 .. $2;
+            $ch_input = 1;
+        } elsif ($selected =~ m/\d+,\d+/) {
+            @selected = split (/,/, join(',', $selected));
+            $ch_input = 1;
+        } elsif ($selected =~ m/\d+/) {
         push (@selected, $selected);
         $ch_input = 1;
     } else {
@@ -182,15 +187,14 @@ if (scalar(@ch_selected) == 0) {
     print GREEN "Downloading:\n";
 }
 my %replaced_sym = ('/' => '.', '\s+' => ' ', "'" => "");
-foreach my $music (@ch_selected) {
-    my $str = sprintf ("[%d] %-s", $music, ${$music_base[$music]}[0]);
-    print CYAN "\t$str";
-    my $fname = ${$music_base[$music]}[0];
+foreach my $music_num (@ch_selected) {
+    _print_music_string($music_num, $music_base[$music_num]{'artist'}, $music_base[$music_num]{'song_name'}, $music_base[$music_num]{'dur'});
+    my $fname = "$music_base[$music_num]{'artist'} - $music_base[$music_num]{'song_name'}";
     foreach my $symbol (keys %replaced_sym) {
         $fname =~ s/$symbol/$replaced_sym{$symbol}/g;
     }
     $fname .= ".mp3";
-    system("curl $curl_opts -b $cookie_fname -A \"$ua\" \"${$music_base[$music]}[1]\" > \'$download_dir/$fname\' 2>&1");
+    system("curl $curl_opts -b $cookie_fname -A \"$ua\" \"$music_base[$music_num]{'src'}\" > \'$download_dir/$fname\' 2>&1");
     $fname =~ s/"/\"/g;
     my $file_chk = -f "$download_dir/$fname";
     _print_ok_fail ($file_chk, " OK", " Fail: Cant't download $!");
@@ -252,10 +256,10 @@ sub _print_music_string {
 
     my $artist_pr = sprintf ("%-20s - ", $artist);
     my $name_pr = sprintf ("%-20s", $name);
-    print CYAN "[$item] ";
+    print CYAN "\n[$item] ";
     print WHITE "$artist_pr";
     print BOLD BLUE "$name_pr";
-    print CYAN " ($duration)\n";
+    print CYAN " ($duration)";
 
 }
 
@@ -328,6 +332,21 @@ sub _tags_parser {
 
 sub _json_parser {
     my $string = shift;
-#    $DB::single=1;
+    $DB::single=1;
+    my @string = split (//, $string);
+    my ($block_start, @music_base, $param_start);
+    foreach my $smb (@string) {
+        if ($smb eq "[") {
+            $block_start = 1;
+        }
+        if (($block_start)&&($smb eq "'")) {
+            $param_start = 1;
+
+        } elsif (($block_start)&&($smb eq "]")) {
+        } else {
+            $block_start = 0;
+        }
+        
+    }
     return;
 }
