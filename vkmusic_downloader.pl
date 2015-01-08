@@ -13,7 +13,6 @@ use Encode qw(decode encode);
 use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 use constant DELIM_S => '-' x 80;
-use Data::Dumper;
 
 my $VERSION = "1.1 (Jan 2014)";
 my ($help, $curl_opts, $ch_curl, $curlout, $auth_loc, $user_id, $search, $search_artist, $all_user_music);
@@ -97,7 +96,7 @@ if ($search) {
 if ($search_artist) {
     $curlout = `curl -v -b $cookie_fname -A "$ua" -H "Accept-Language:en-US,en;q=0.8" -X POST -d "act=search&al=1&autocomplete=1&gid=0&id=$user_id&offset=0&performer=1&q=$search&sort=0" "https://vk.com/audio" 2>&1`;
 } elsif ($search) {
-        $curlout = `curl -v -b $cookie_fname -A "$ua" -H "Accept-Language:en-US,en;q=0.8" -X POST -d "act=search&al=1&autocomplete=1&gid=0&id=$user_id&offset=0&q=$search&sort=0" "https://vk.com/audio" 2>&1`;
+    $curlout = `curl -v -b $cookie_fname -A "$ua" -H "Accept-Language:en-US,en;q=0.8" -X POST -d "act=search&al=1&autocomplete=1&gid=0&id=$user_id&offset=0&q=$search&sort=0" "https://vk.com/audio" 2>&1`;
 } elsif ($all_user_music) {
     $curlout = `curl -s -b $cookie_fname -A "$ua" -H "Accept-Language:en-US,en;q=0.8" -X POST -d "act=load_audios_silent&al=1&gid=0&id=$user_id&please_dont_ddos=1" "https://vk.com/audio" 2>&1`;
 } else {
