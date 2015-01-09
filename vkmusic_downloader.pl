@@ -17,7 +17,7 @@ use constant DELIM_S => '-' x 80;
 my $VERSION = "1.1 (Jan 2014)";
 my ($help, $curl_opts, $ch_curl, $curlout, $auth_loc, $user_id, $search, $search_artist, $all_user_music);
 my $debug = 0;
-GetOptions ('h|help' => \$help, 'd|debug' => \$debug, 's|search=s' => \$search, 'a|artist' => \$search_artist, 'u|usermusic' => \$all_user_music) or _print_help();
+GetOptions ('h|help' => \$help, 'd|debug' => \$debug, 's|search=s' => \$search, 'a|artist' => \$search_artist, 'u|usertracks' => \$all_user_music) or _print_help();
 
 print "\nWelcome to "; print BOLD RED "VKMusic downloader"; print " $VERSION\n";
 _print_help() if ($help);
@@ -195,7 +195,7 @@ foreach my $music_num (@ch_selected) {
     _print_ok_fail ($file_chk, " OK", " Fail: Cant't download $!");
 }
 
-#unlink $cookie_fname;
+unlink $cookie_fname;
 
 sub _convert_symbols {
     my $string = shift;
