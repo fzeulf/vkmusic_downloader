@@ -153,6 +153,7 @@ foreach my $string (@music_html) {
             push (@selected, 1); 
             $ch_input = 1;
         } elsif ($selected eq "q") {
+            unlink $cookie_fname;
             exit;
         } elsif (($selected eq "*")||($selected eq "all")) {
             @selected = 1 .. scalar(@music_base);
