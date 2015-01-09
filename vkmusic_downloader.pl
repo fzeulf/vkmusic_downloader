@@ -6,6 +6,9 @@
 use strict;
 use warnings;
 use utf8;
+use threads;
+use threads::shared;
+use Thread::Semaphore;
 use open qw(:utf8 :std);
 use configfile;
 use Getopt::Long;
@@ -14,9 +17,13 @@ use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 use constant DELIM_S => '-' x 80;
 
-my $VERSION = "1.1 (Jan 2014)";
+my $VERSION = "1.2 (Jan 2014)";
 my ($help, $curl_opts, $ch_curl, $curlout, $auth_loc, $user_id, $search, $search_artist, $all_user_music);
+my ($succ_op, $failed_op) :shared;
 my $debug = 0;
+$succ_op = 0;
+$failed_op = 0;
+my $sem = Thread::Semaphore->new($num_of_downloads);
 GetOptions ('h|help' => \$help, 'd|debug' => \$debug, 's|search=s' => \$search, 'a|artist' => \$search_artist, 'u|usertracks' => \$all_user_music) or _print_help();
 
 print "\nWelcome to "; print BOLD RED "VKMusic downloader"; print " $VERSION\n";
