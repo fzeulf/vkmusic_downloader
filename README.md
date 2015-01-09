@@ -21,21 +21,21 @@ All you need is curl programm installed for your OS
 ```
 * $email - registration email
 * $pass - registration password
-* $download_dir - full path to directory where music will be placed, script can create it if it doesn't exist
+* $download_dir - full path to directory where tracks will be placed, script can create it if it doesn't exist
 * $ua - browser user agent string, could be leaved as is
 
 ### Options and examples
     -s,--search name - search by given name
     -a,--artist - modificator for search by artist name
     -d,--debug - enable debug output
-    -u,--usermusic - show all user music
+    -u,--usertracks - show all user tracks
     -h,-?,--help - Print this help and exit
 
-    Show first 50 user music:
+    Show first 50 user tracks:
     ./vkmusic_downloader.pl
-    Show all user added music:
+    Show all user tracks:
     ./vkmusic_downloader.pl -u
-    Search by music name:
+    Search by track name:
     ./vkmusic_downloader.pl -s 'Candy Shop'
     Search by artist name:
     ./vkmusic_downloader.pl -s astrix -a
@@ -52,8 +52,8 @@ Where:
 
 * **[1]** - consecutive number
 * **Astrix** - artist name
-* **Beyond The Senses.** - song name
-* **(7:45)** - song duration
+* **Beyond The Senses.** - track name
+* **(7:45)** - track duration
 
 Then you could select any particular song or number of songs (by consecutive number) write and push enter:
 - digits through comma (1,3,4,10)
@@ -70,7 +70,7 @@ Was tested for:
 ### Change log
 **Version 1.1**
 
-- Show all user added music
+- Show all user added tracks 
 
 **Version 1.0**
 

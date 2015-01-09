@@ -214,13 +214,17 @@ sub _print_help {
             -s,--search name - search by given name
             -a,--artist - modificator for search by artist name
             -d,--debug - enable debug output
-            -u,--usermusic - show all user music
+            -u,--usertracks - show all user tracks
             -h,-?,--help - Print this help and exit
 
         EXAMPLES
-            Search by music name
+            Show first 50 user tracks:
+            $0
+            Show all user tracks:
+            $0 -u
+            Search by track name:
             $0 -s 'Candy Shop'
-            Search by artist name
+            Search by artist name:
             $0 -s astrix -a
 
 endOfTxt
