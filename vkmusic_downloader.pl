@@ -14,7 +14,7 @@ use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 use constant DELIM_S => '-' x 80;
 
-my $VERSION = "1.1 (Jan 2014)";
+my $VERSION = "1.1 (Jan 2015)";
 my ($help, $curl_opts, $ch_curl, $curlout, $auth_loc, $user_id, $search, $search_artist, $all_user_music);
 my $debug = 0;
 GetOptions ('h|help' => \$help, 'd|debug' => \$debug, 's|search=s' => \$search, 'a|artist' => \$search_artist, 'u|usertracks' => \$all_user_music) or _print_help();
