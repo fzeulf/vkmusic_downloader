@@ -31,9 +31,11 @@ All you need is curl programm installed for your OS. Read <a href="#faq">FAQ</a>
 **1. How to start script from everywhere, not only from its directory**
 
 Firstly, add link to script from some directory which is listed in the $PATH env variable. ```echo $PATH``` - shows you these dirs. For example: 
+
 ```ln -s PATH_TO_CLONED_DIR/vkmusic_downloader/vkmusic_downloader.pl /usr/local/bin```
 
 Secondly, add into 1 string in the script, was ```#!/usr/bin/perl``` became 
+
 ```#!/usr/bin/perl -I/PATH_TO_CLONED_DIR/vkmusic_downloader```
 
 Now you could execute script from every directory, like usual command
