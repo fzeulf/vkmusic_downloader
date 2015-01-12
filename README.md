@@ -1,11 +1,11 @@
 # Vk music downloader
 ![image](https://raw.githubusercontent.com/fzeulf/vkmusic_downloader/master/executed.png)
 ### Description
-Simple perl script for search and download music from vk.com
-Required active account in the vk system, credentials must be placed in the configfile.pm
+Simple perl script for search and download music from vk.com.
+Required active account in the vk social network, credentials must be placed in the configfile.pm
 
 I try to avoid of using any of external perl libraries, so you don't need to load any of them.
-All you need is curl programm installed for your OS
+All you need is curl programm installed for your OS. Read <a href="#faq">FAQ</a> if you have questions.
 
 ### Setup
 1. `git clone https://github.com/fzeulf/vkmusic_downloader`
@@ -26,6 +26,17 @@ All you need is curl programm installed for your OS
 <tr> <th>$download_dir <td>full path to directory where tracks will be placed, script can create it if it doesn't exist.
 <tr> <th>$ua <td>user agent string, could be leaved as is.
 </table>
+
+### <a name="faq">FAQ</a>
+**1. How to start script from everywhere, not only its directory**
+
+Firstly, add link to script from some directory which writed in the $PATH env variable. ```echo $PATH``` - shows you which dir are in the $PATH already. For example: 
+```ln -s PATH_TO_CLONED_DIR/vkmusic_downloader/vkmusic_downloader.pl /usr/local/bin```
+
+Secondly, change 1 string in the script ```#!/usr/bin/perl``` to 
+```#!/usr/bin/perl -I/PATH_TO_CLONED_DIR/vkmusic_downloader```
+
+Now you could execute script from every directory like usual command
 
 ### Options and examples
     -s,--search name - search by given name
