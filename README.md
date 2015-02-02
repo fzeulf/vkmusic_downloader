@@ -16,8 +16,9 @@ All you need is curl programm installed for your OS
 ```
     our $email = 'user@gmail.com';
     our $pass = 'password';
-    our $download_dir = '/Users/fzeulf/Downloads/vk_downloads';
+    our $download_dir = '/tmp/vk_downloads';
     our $ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.120 Safari/537.37';
+    our $num_of_downloads = 5;
 ```
 
 <table>
@@ -25,6 +26,7 @@ All you need is curl programm installed for your OS
 <tr> <th>$pass <td>registration password.
 <tr> <th>$download_dir <td>full path to directory where tracks will be placed, script can create it if it doesn't exist.
 <tr> <th>$ua <td>user agent string, could be leaved as is.
+<tr> <th>$num_of_downloads <td> Maximum number of simultaneous track downloads.
 </table>
 
 ### Options and examples
@@ -71,8 +73,13 @@ Then you could select any particular song or number of songs (by consecutive num
 Was tested for:
 - MAC OS X
 - Windows (Cygwin + curl compilation from src)
+- Debian linux
 
 ### Change log
+**Version 1.2**
+
+- Simultaneous downloads
+
 **Version 1.1**
 
 - Show all user added tracks
