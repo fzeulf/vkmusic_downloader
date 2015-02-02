@@ -42,6 +42,10 @@ Secondly, add into 1 string in the script, was ```#!/usr/bin/perl``` became
 
 Now you could execute script from every directory, like usual command
 
+**2. After git update script throws an error "Global symbol "$num_of_downloads" requires explicit package name at ./vkmusic_downloader.pl line 26.**
+
+Check new variable $num_of_downloads in the configfile.pm.example, so you have use new config.
+
 ### Options and examples
     -s,--search name - search by given name
     -a,--artist - modificator for search by artist name

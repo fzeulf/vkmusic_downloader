@@ -56,7 +56,7 @@ my %html_codes = ( # not all of them, but more popular. NOTE: Some of them repla
     "&#43;" => '+', "&#44;" => ',', "&#45;" => '-', "&#46;" => '.', "&#47;" => '|', "&#92;" => "|", "&#092;" => "|",
     "&gt;" => '>', "&lt;" => '<', "&#123;" => '{',
     "&#124;" => '|', "&#125;" => '}', "&#126;" => '~', "&#178;" => '²', "&#953;" => 'ι', "&#9824;" => '♠', "&#9829;" => '♥',
-    "&#9827;" => '♣', "&#9830;" => '♦',
+    "&#9827;" => '♣', "&#9830;" => '♦', "&#9835;" => '♫',
 );
 
 my $cookie_fname = "cookie.vk";
@@ -304,7 +304,7 @@ sub _print_music_string {
     my $name_pr = sprintf ("%-20s", $name);
     print CYAN "[$item] ";
     print WHITE "$artist_pr";
-    print BOLD BLUE "$name_pr";
+    print BRIGHT_BLUE "$name_pr";
     print CYAN " ($duration)";
     print "\n" if $new_line;
 
