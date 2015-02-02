@@ -6,6 +6,9 @@
 use strict;
 use warnings;
 use utf8;
+use threads;
+use threads::shared;
+use Thread::Semaphore;
 use open qw(:utf8 :std);
 use configfile;
 use Getopt::Long;
@@ -14,9 +17,13 @@ use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 use constant DELIM_S => '-' x 80;
 
-my $VERSION = "1.1 (Jan 2015)";
+my $VERSION = "1.2 (Feb 2015)";
 my ($help, $curl_opts, $ch_curl, $curlout, $auth_loc, $user_id, $search, $search_artist, $all_user_music);
+my ($succ_op, $failed_op) :shared;
 my $debug = 0;
+$succ_op = 0;
+$failed_op = 0;
+my $sem = Thread::Semaphore->new($num_of_downloads - 1);
 GetOptions ('h|help' => \$help, 'd|debug' => \$debug, 's|search=s' => \$search, 'a|artist' => \$search_artist, 'u|usertracks' => \$all_user_music) or _print_help();
 
 print "\nWelcome to "; print BOLD RED "VKMusic downloader"; print " $VERSION\n";
@@ -184,19 +191,49 @@ if (scalar(@ch_selected) == 0) {
 }
 my %replaced_sym = ('/' => '.', '\s+' => ' ', "'" => "");
 foreach my $music_num (@ch_selected) {
-    _print_music_string($music_num, $music_base[$music_num]{'artist'}, $music_base[$music_num]{'song_name'}, $music_base[$music_num]{'dur'});
     my $fname = "$music_base[$music_num]{'artist'} - $music_base[$music_num]{'song_name'}";
     foreach my $symbol (keys %replaced_sym) {
         $fname =~ s/$symbol/$replaced_sym{$symbol}/g;
     }
     $fname .= ".mp3";
-    system("curl $curl_opts -b $cookie_fname -A \"$ua\" \"$music_base[$music_num]{'src'}\" > \'$download_dir/$fname\' 2>&1");
-    $fname =~ s/"/\"/g;
-    my $file_chk = -f "$download_dir/$fname";
-    _print_ok_fail ($file_chk, " OK", " Fail: Cant't download $!");
+    my $thread = threads->create(\&_download_track, $music_num, $fname);
+    $sem->down;
 }
 
+my $all_threads_done = 0;
+until ($all_threads_done) {
+    if (scalar (threads->list(threads::running)) == 0) {
+        $all_threads_done = 1;
+        $_->join() foreach (threads->list(threads::joinable));
+    }
+    select(undef, undef, undef, 0.500);
+}
+print GREEN DELIM_S . "\n";
+print YELLOW "Downloaded: ";
+print GREEN "$succ_op";
+print YELLOW " / ";
+print RED "$failed_op\n";
+
 unlink $cookie_fname;
+
+sub _download_track {
+    my $music_num = shift;
+    my $fname = shift;
+    my $retval = 1;
+    system("curl $curl_opts -b $cookie_fname -A \"$ua\" \"$music_base[$music_num]{'src'}\" > \'$download_dir/$fname\' 2>&1");
+    _print_music_string($music_num, $music_base[$music_num]{'artist'}, $music_base[$music_num]{'song_name'}, $music_base[$music_num]{'dur'});
+    $fname =~ s/"/\"/g;
+    my $file_chk = -f "$download_dir/$fname";
+    if ($file_chk) {
+        $succ_op++;   
+    } else {
+        $failed_op++;
+        $retval = 0;
+    }
+    _print_ok_fail ($file_chk, " OK", " Fail: Cant't download $!");
+    $sem->up;
+    return $retval;
+}
 
 sub _convert_symbols {
     my $string = shift;
