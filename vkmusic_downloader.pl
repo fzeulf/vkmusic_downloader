@@ -49,6 +49,9 @@ if (not $pass) {
 if (($search_artist) && (not $search)) {
     print RED "-a could be used only with -s option.\n" and exit;
 }
+if ($] > 5.016003) {
+    print RED "Your version of perl '$]' has an issue with threading, use perl 5.16 or less\n" and exit;
+}
 
 my %html_codes = ( # not all of them, but more popular. NOTE: Some of them replaced by another symbols, due OS console restrictions
     "&quot;" => '"', "&amp;" => '&', "&#32;" => ' ', "&#33;" => '!', "&#34;" => '"', "&#35;" => '#', "&#36;" => '$',

@@ -46,6 +46,11 @@ Now you could execute script from every directory, like usual command
 
 Check new variable $num_of_downloads in the configfile.pm.example, so you have use new config.
 
+**3. Error perl(1069,0x7fff7eba4300) malloc: *** error for object 0x7f84394ca4b0: pointer being freed was not allocated.**
+
+This error occured at perl 5.18 version, so i had to set restrict of version
+
+
 ### Options and examples
     -s,--search name - search by given name
     -a,--artist - modificator for search by artist name
