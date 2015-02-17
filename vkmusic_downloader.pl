@@ -17,14 +17,14 @@ use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 use constant DELIM_S => '-' x 80;
 
-my $VERSION = "1.2 (Feb 2015)";
-my ($help, $curl_opts, $ch_curl, $curlout, $auth_loc, $user_id, $search, $search_artist, $all_user_music);
+my $VERSION = "1.3 (Feb 2015)";
+my ($help, $curl_opts, $ch_curl, $curlout, $auth_loc, $user_id, $search, $search_artist, $all_user_music, $show_playlists);
 my ($succ_op, $failed_op) :shared;
 my $debug = 0;
 $succ_op = 0;
 $failed_op = 0;
 my $sem = Thread::Semaphore->new($num_of_downloads - 1);
-GetOptions ('h|help' => \$help, 'd|debug' => \$debug, 's|search=s' => \$search, 'a|artist' => \$search_artist, 'u|usertracks' => \$all_user_music) or _print_help();
+GetOptions ('h|help' => \$help, 'd|debug' => \$debug, 's|search=s' => \$search, 'a|artist' => \$search_artist, 'u|usertracks' => \$all_user_music, 'p|playlists' => \$show_playlists) or _print_help();
 
 print "\nWelcome to "; print BOLD RED "VKMusic downloader"; print " $VERSION\n";
 _print_help() if ($help);
@@ -107,7 +107,7 @@ if ($search_artist) {
     $curlout = `curl -v -b $cookie_fname -A "$ua" -H "Accept-Language:en-US,en;q=0.8" -X POST -d "act=search&al=1&autocomplete=1&gid=0&id=$user_id&offset=0&performer=1&q=$search&sort=0" "https://vk.com/audio" 2>&1`;
 } elsif ($search) {
     $curlout = `curl -v -b $cookie_fname -A "$ua" -H "Accept-Language:en-US,en;q=0.8" -X POST -d "act=search&al=1&autocomplete=1&gid=0&id=$user_id&offset=0&q=$search&sort=0" "https://vk.com/audio" 2>&1`;
-} elsif ($all_user_music) {
+} elsif (($all_user_music)||($show_playlists)) {
     $curlout = `curl -s -b $cookie_fname -A "$ua" -H "Accept-Language:en-US,en;q=0.8" -X POST -d "act=load_audios_silent&al=1&gid=0&id=$user_id&please_dont_ddos=1" "https://vk.com/audio" 2>&1`;
 } else {
     $curlout = `curl -v -b $cookie_fname -A "$ua" -H "Accept-Language:en-US,en;q=0.8" "https://vk.com/audios$user_id" 2>&1`;
@@ -118,7 +118,14 @@ my (@music_base, $music_src, $artist, $name);
 my $item = 1;
 foreach my $string (@music_html) {
     $string = decode('cp1251', encode('utf8', $string));
-    if (not $all_user_music) {
+    if ($all_user_music) {
+        @music_base = _json_parser ($string);
+        for (my $i = 1; $i <= $#music_base; $i++) {
+            _print_music_string($i, $music_base[$i]{'artist'}, $music_base[$i]{'song_name'}, $music_base[$i]{'dur'}, 1);
+        }
+    } elsif ($show_playlists) {
+
+    } else {
         if ($string =~ m/<input\s+type="hidden"\s+id="audio_info\S+"\s+value="([^\?]+)/) {
             $music_src = $1;
         }
@@ -145,38 +152,33 @@ foreach my $string (@music_html) {
                 $music_src = undef;
             }
         } 
-    } else {
-        @music_base = _json_parser ($string);
-        for (my $i = 1; $i <= $#music_base; $i++) {
-                _print_music_string($i, $music_base[$i]{'artist'}, $music_base[$i]{'song_name'}, $music_base[$i]{'dur'}, 1);
-            }
-        }
     }
-    exit unless _print_ok_fail ($user_id, "\n". DELIM_S, "Fail: Can't parse vk.com main page, may be it was changed");
+}
+exit unless _print_ok_fail (scalar(@music_base), "\n". DELIM_S, "Fail: Can't parse vk.com audio page, may be it was changed");
 
-    print GREEN "Select song number (h for help) [1]: ";
-    my $ch_input = 0;
-    my @selected;
-    until ($ch_input) {
-        chomp(my $selected = <STDIN>);
-        if (not $selected) {
-            push (@selected, 1); 
-            $ch_input = 1;
-        } elsif ($selected eq "q") {
-            unlink $cookie_fname;
-            exit;
-        } elsif (($selected eq "*")||($selected eq "all")) {
-            @selected = 1 .. scalar(@music_base);
-            $ch_input = 1;
-        } elsif ($selected eq "h") {
-            print "Define number i.e. 1 or numbers through comma i.e 1,2,3, or list 1-5, * / all - select all, q - exit\n";
-        } elsif ($selected =~ m/(\d+)-(\d+)/) {
-            @selected = $1 .. $2;
-            $ch_input = 1;
-        } elsif ($selected =~ m/\d+,\d+/) {
-            @selected = split (/,/, join(',', $selected));
-            $ch_input = 1;
-        } elsif ($selected =~ m/\d+/) {
+print GREEN "Select song number (h for help) [1]: ";
+my $ch_input = 0;
+my @selected;
+until ($ch_input) {
+    chomp(my $selected = <STDIN>);
+    if (not $selected) {
+        push (@selected, 1); 
+        $ch_input = 1;
+    } elsif ($selected eq "q") {
+        unlink $cookie_fname;
+        exit;
+    } elsif (($selected eq "*")||($selected eq "all")) {
+        @selected = 1 .. scalar(@music_base);
+        $ch_input = 1;
+    } elsif ($selected eq "h") {
+        print "Define number i.e. 1 or numbers through comma i.e 1,2,3, or list 1-5, * / all - select all, q - exit\n";
+    } elsif ($selected =~ m/(\d+)-(\d+)/) {
+        @selected = $1 .. $2;
+        $ch_input = 1;
+    } elsif ($selected =~ m/\d+,\d+/) {
+        @selected = split (/,/, join(',', $selected));
+        $ch_input = 1;
+    } elsif ($selected =~ m/\d+/) {
         push (@selected, $selected);
         $ch_input = 1;
     } else {
@@ -256,6 +258,7 @@ sub _print_help {
             -a,--artist - modificator for search by artist name
             -d,--debug - enable debug output
             -u,--usertracks - show all user tracks
+            -p,--playlists - show all user playlists
             -h,-?,--help - Print this help and exit
 
         EXAMPLES
@@ -267,6 +270,8 @@ sub _print_help {
             $0 -s 'Candy Shop'
             Search by artist name:
             $0 -s astrix -a
+            Show all user playlists
+            $0 -p
 
 endOfTxt
     exit;
@@ -401,6 +406,7 @@ sub _json_parser {
                 'song_name' => "$song_name", 
                 'src' => "$block_params[2]",
                 'dur' => "$block_params[4]",
+                'plst' => $block_params[8],
             };
             $music_num++;
             $block_start = 0;
