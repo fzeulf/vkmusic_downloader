@@ -229,13 +229,19 @@ sub _download_track {
     _print_music_string($music_num, $music_base[$music_num]{'artist'}, $music_base[$music_num]{'song_name'}, $music_base[$music_num]{'dur'});
     $fname =~ s/"/\"/g;
     my $file_chk = -f "$download_dir/$fname";
-    if ($file_chk) {
+    my $file_size = -s "$download_dir/$fname";
+    if (($file_chk)&&($file_size != 0)) {
         $succ_op++;   
+        _print_ok_fail ($file_size, " OK", " Fail: file has zero size");
     } else {
+        if (not $file_chk) {
+            _print_ok_fail ($file_chk, " OK", " Fail: Cant't download $!");
+        } else {
+            _print_ok_fail ($file_size, " OK", " Fail: file has zero size");
+        }
         $failed_op++;
         $retval = 0;
     }
-    _print_ok_fail ($file_chk, " OK", " Fail: Cant't download $!");
     $sem->up;
     return $retval;
 }
