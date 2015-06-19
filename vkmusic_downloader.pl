@@ -17,7 +17,7 @@ use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 use constant DELIM_S => '-' x 80;
 
-my $VERSION = "1.3 (Feb 2015)";
+my $VERSION = "1.4 (Jun 2015)";
 my ($help, $curl_opts, $ch_curl, $curlout, $auth_loc, $user_id, $search, $search_artist, $all_user_music, $show_playlists);
 my ($succ_op, $failed_op) :shared;
 my $debug = 0;
@@ -66,7 +66,7 @@ my $cookie_fname = "cookie.vk";
 
 print GREEN "Checking download dir:";
 if (-d $download_dir) {
-    print GREEN " OK\n";
+    print GREEN " '$download_dir' OK\n";
 } else {
     my @dirs_path = split (/\//, $download_dir); # i avoid of using File::Path::make_path because this function could has different name in different versions of perl
     my $full_path;
@@ -81,7 +81,8 @@ if (-d $download_dir) {
     print GREEN " Created $full_path\n";
 }
 print GREEN "Authorizaion:";
-$curlout = `curl -i -c $cookie_fname -A "$ua" -X POST -d "email=$email" -d "pass=$pass" "https://login.vk.com/?act=login" 2>&1`;
+#$DB::single=1;
+$curlout = `curl -i -c $cookie_fname -A "$ua" "https://login.vk.com/?act=login" -H "origin: https://vk.com" -H "accept-encoding: gzip, deflate" -H "accept-language: en-US,en;q=0.8" -H "content-type: application/x-www-form-urlencoded" -H "accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8" -H "cache-control: max-age=0" -H "cookie: remixdt=0; remixlang=0; remixseenads=2; remixlhk=bf2d1843e55161340b; remixflash=18.0.0; remixscreen_depth=24" --data "act=login&role=al_frame&expire=&captcha_sid=&captcha_key=&_origin=https"%"3A"%"2F"%"2Fvk.com&ip_h=ea277a92d28dda8c81&lg_h=570421fe6130338962&email=$email&pass=$pass" 2>&1`;
 _print_debug($curlout) if $debug;
 if ($curlout =~ m/Location\:\s+(.+hash=.+)/) {
     $auth_loc = $1;
@@ -393,7 +394,6 @@ sub _tags_parser {
 
 sub _json_parser {
     my $string = shift;
-#    $DB::single=1;
     my @string = split (//, $string);
     my ($block_start, @music_base, $param_start, $param, @block_params);
     my $music_num = 1;
