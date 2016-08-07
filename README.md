@@ -98,6 +98,11 @@ Was tested for:
 - Debian linux
 
 ### Change log
+**Version 1.5**
+
+- Retries for web requests
+- Bug fixes for parser
+
 **Version 1.2**
 
 - Simultaneous downloads

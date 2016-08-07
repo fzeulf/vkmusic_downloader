@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/bin/env perl
 # written by fzeulf
 # description: script for vk music download
 # info: config must be in the configfile.pm 
@@ -8,16 +8,20 @@ use warnings;
 use utf8;
 use threads;
 use threads::shared;
+use FindBin qw( $Bin );
+use lib ("$Bin");
 use Thread::Semaphore;
 use open qw(:utf8 :std);
 use configfile;
 use Getopt::Long;
 use Encode qw(decode encode);
+binmode STDOUT, ':utf8';
 use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 use constant DELIM_S => '-' x 80;
+$| = 1;
 
-my $VERSION = "1.4 (Jun 2015)";
+my $VERSION = "1.5 (Aug 2016)";
 my ($help, $curl_opts, $ch_curl, $curlout, $auth_loc, $user_id, $search, $search_artist, $all_user_music, $show_playlists);
 my ($succ_op, $failed_op) :shared;
 my $debug = 0;
@@ -53,13 +57,15 @@ if ($] == 5.018002) {
     print RED "Perl version 5.018002 has an issue with threading, use any other version of perl\n" and exit;
 }
 
+# https://en.wikipedia.org/wiki/List_of_Unicode_characters
 my %html_codes = ( # not all of them, but more popular. NOTE: Some of them replaced by another symbols, due OS console restrictions
     "&quot;" => '"', "&amp;" => '&', "&#32;" => ' ', "&#33;" => '!', "&#34;" => '"', "&#35;" => '#', "&#36;" => '$',
     "&#37;" => '%', "&#38;" => '&', "&#39;" => ".", "&#40;" => '(', "&#41;" => ')', "&#42;" => '*',
     "&#43;" => '+', "&#44;" => ',', "&#45;" => '-', "&#46;" => '.', "&#47;" => '|', "&#92;" => "|", "&#092;" => "|",
     "&gt;" => '>', "&lt;" => '<', "&#123;" => '{',
     "&#124;" => '|', "&#125;" => '}', "&#126;" => '~', "&#178;" => '²', "&#953;" => 'ι', "&#9824;" => '♠', "&#9829;" => '♥',
-    "&#9827;" => '♣', "&#9830;" => '♦', "&#9835;" => '♫',
+    "&#9827;" => '♣', "&#9830;" => '♦', "&#9835;" => '♫', "&#9679;" => '●', "&#729;" => '˙', "&#3665;" => '๑', "&#1632;" => '٠', 
+    "&#903;" => '·',
 );
 
 my $cookie_fname = "cookie.vk";
@@ -87,36 +93,54 @@ _print_debug($curlout) if $debug;
 if ($curlout =~ m/Location\:\s+(.+hash=.+)/) {
     $auth_loc = $1;
     $auth_loc =~ s/\r|\n//;
+	sleep 1;
 }
 exit unless _print_ok_fail ($auth_loc, " OK", " Fail: check authorization data ($email:$pass), can't authorize with them");
 
 print GREEN "Opening music:";
-$curlout = `curl $curl_opts -b $cookie_fname -c $cookie_fname -A "$ua" "$auth_loc" 2>&1`;
-$curlout = `curl -v -b $cookie_fname -A "$ua" "https://vk.com/feed" 2>&1`;
-_print_debug($curlout) if $debug;
-if ($curlout =~ m/id="head_music"\s+href="\/audios(\d+)/) {
-    $user_id = $1;
-    $user_id =~ s/\r|\n//;
+for (my $i = 0; $i < 5; $i++) {
+	$curlout = _cmd_timeout("curl $curl_opts -b $cookie_fname -c $cookie_fname -A \"$ua\" \"$auth_loc\" 2>&1");
+	sleep 1 and next if $curlout eq 0;
+	$curlout = _cmd_timeout("curl -v -b $cookie_fname -A \"$ua\" \"https://vk.com/feed\" 2>&1");
+	sleep 1 and next if $curlout eq 0;
+	_print_debug($curlout) if $debug;
+	if ($curlout =~ m/id="head_music"\s+href="\/audios(\d+)/) {
+		$user_id = $1;
+		$user_id =~ s/\r|\n//;
+		sleep 1;
+		last;
+	}
 }
 exit unless _print_ok_fail ($user_id, " OK", " Fail: Can't parse vk.com main page, may be it was changed");
 
-print GREEN "Loaded music list:\n";
+print GREEN "Loading music list:\n";
 if ($search) {
     $search =~ s/([\W])/"%" . uc(sprintf("%2.2x",ord($1)))/eg;
 }
+my $music_html_cmd = "";
 if ($search_artist) {
-    $curlout = `curl -v -b $cookie_fname -A "$ua" -H "Accept-Language:en-US,en;q=0.8" -X POST -d "act=search&al=1&autocomplete=1&gid=0&id=$user_id&offset=0&performer=1&q=$search&sort=0" "https://vk.com/audio" 2>&1`;
+    $music_html_cmd = "curl -v -b $cookie_fname -A \"$ua\" -H \"Accept-Language:en-US,en;q=0.8\" -X POST -d \"act=search&al=1&autocomplete=1&gid=0&id=$user_id&offset=0&performer=1&q=$search&sort=0\" \"https://vk.com/audio\" 2>&1";
 } elsif ($search) {
-    $curlout = `curl -v -b $cookie_fname -A "$ua" -H "Accept-Language:en-US,en;q=0.8" -X POST -d "act=search&al=1&autocomplete=1&gid=0&id=$user_id&offset=0&q=$search&sort=0" "https://vk.com/audio" 2>&1`;
+    $music_html_cmd = "curl -v -b $cookie_fname -A \"$ua\" -H \"Accept-Language:en-US,en;q=0.8\" -X POST -d \"act=search&al=1&autocomplete=1&gid=0&id=$user_id&offset=0&q=$search&sort=0\" \"https://vk.com/audio\" 2>&1";
 } elsif (($all_user_music)||($show_playlists)) {
-    $curlout = `curl -s -b $cookie_fname -A "$ua" -H "Accept-Language:en-US,en;q=0.8" -X POST -d "act=load_audios_silent&al=1&gid=0&id=$user_id&please_dont_ddos=1" "https://vk.com/audio" 2>&1`;
+    $music_html_cmd = "curl -s -b $cookie_fname -A \"$ua\" -H \"Accept-Language:en-US,en;q=0.8\" -X POST -d \"act=load_audios_silent&al=1&gid=0&id=$user_id&please_dont_ddos=1\" \"https://vk.com/audio\" 2>&1";
 } else {
-    $curlout = `curl -v -b $cookie_fname -A "$ua" -H "Accept-Language:en-US,en;q=0.8" "https://vk.com/audios$user_id" 2>&1`;
+    $music_html_cmd = "curl -v -b $cookie_fname -A \"$ua\" -H \"Accept-Language:en-US,en;q=0.8\" \"https://vk.com/audios$user_id\" 2>&1";
+}
+
+for (my $i = 0; $i < 5; $i++) {
+	$curlout = _cmd_timeout($music_html_cmd);
+	sleep 1 and next if $curlout eq 0;
+	if ($curlout =~ m/audios$user_id/) {
+		sleep 1;
+		last;
+	}
 }
 _print_debug($curlout) if $debug;
 my @music_html = split (/\n/, $curlout);
 my (@music_base, $music_src, $artist, $name);
 my $item = 1;
+#$DB::single=1;
 foreach my $string (@music_html) {
     $string = decode('cp1251', encode('utf8', $string));
     if ($all_user_music) {
@@ -132,6 +156,7 @@ foreach my $string (@music_html) {
         }
         if ($music_src) {
             if ($string =~ m/<a\s+href="\/search\?c\[q\]=.*\s+name:\s+\'(.+)\'.*<span\sclass="title">(.*)/) {
+                #print "->>$string\n\n";
                 $artist = _convert_symbols($1);
                 $name = _convert_symbols(_html_parser($2));
                 if ($artist =~ m/^\s*(.+)\s*$/) {
@@ -222,6 +247,27 @@ print RED "$failed_op\n";
 
 unlink $cookie_fname;
 
+sub _cmd_timeout {
+    my $cmd = shift;
+    my $timeout = shift; # timeout in seconds
+    $timeout = defined $timeout ? $timeout : 10;    
+
+	my $output = "";
+    eval {
+        local $SIG{ALRM} = sub { die "timeout_alarm\n" };
+        alarm $timeout;
+        $output = `$cmd`;
+        alarm 0;
+    };
+    if (defined($@)) {
+        if ($@ eq "timeout_alarm\n") {
+			_print_ok_fail (0, "", " Fail: '$cmd' not finished in $timeout sec. Output: '$@ $output'");
+            return 0;
+        }
+    }
+	return $output;
+}
+
 sub _download_track {
     my $music_num = shift;
     my $fname = shift;
@@ -265,7 +311,7 @@ sub _print_help {
             -a,--artist - modificator for search by artist name
             -d,--debug - enable debug output
             -u,--usertracks - show all user tracks
-            -p,--playlists - show all user playlists
+            -p,--playlists - show all user playlists [not implemented yet]
             -h,-?,--help - Print this help and exit
 
         EXAMPLES
@@ -328,15 +374,15 @@ sub _print_music_string {
 sub _html_parser {
     my $string = shift;
     my $name;
-#    print MAGENTA "\n-$string-";
-    if ($string =~ m/(<span>.+)/) {
-        $name = _tags_parser ("<", ">", "</span><span", $1);
-#        print "\nSPAN-$1-$name\n";
-    } elsif ($string =~ m/<a[^>]*>(.+)/) {
-        $name = _tags_parser ("<", ">", "</a>", $1);
-#        print "\nA-$1-$name\n";
-    } elsif ($string =~ m/([^\<]*)/) {
+    #print MAGENTA "\n->>$string-\n";
+    if (($string =~ m/([^\<]*)/) and ($string !~ m/<a class=/)) { # name without link
         $name = $1;
+    } elsif ($string =~ m/(<span>.+)/) { # formatted by span tags name
+        $name = _tags_parser ("<", ">", "</span><span", $1);
+    #    print "\nSPAN -$1-$name\n";
+    } elsif ($string =~ m/<a[^>]*>(.+)/) { # name is link
+        $name = _tags_parser ("<", ">", "</a>", $1);
+    #    print "\nA -$1-$name\n";
     } else {
         print RED "-$string-\n";
     }
@@ -417,6 +463,7 @@ sub _json_parser {
             $music_num++;
             $block_start = 0;
             @block_params = ();
+			print "\rProcessed: $music_num";
         }
         if (($block_start)&&($smb eq "'")&&(not $param_start)) {
             $param_start = 1;
@@ -431,5 +478,6 @@ sub _json_parser {
         }
         $prev_smb = $smb;
     }
+	print "\n";
     return @music_base;
 }
