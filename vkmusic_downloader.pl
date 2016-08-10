@@ -23,7 +23,7 @@ use constant DELIM_S => '-' x 80;
 $| = 1;
 
 my $VERSION = "1.5 (Aug 2016)";
-my ($help, $curl_opts, $ch_curl, $curlout, $auth_loc, $user_id, $search, $search_artist, $all_user_music, $show_playlists);
+my ($help, $curl_opts, $auth_loc, $user_id, $search, $search_artist, $all_user_music, $show_playlists);
 my ($succ_op, $failed_op) :shared;
 my $debug = 0;
 $succ_op = 0;
@@ -34,7 +34,7 @@ GetOptions ('h|help' => \$help, 'd|debug' => \$debug, 's|search=s' => \$search, 
 print "\nWelcome to "; print BOLD RED "VKMusic downloader"; print " $VERSION\n";
 _print_help() if ($help);
 
-$ch_curl = `which curl`;
+my $ch_curl = `which curl`;
 chomp ($ch_curl);
 if ($debug) {
     $curl_opts = "-i -v";
@@ -89,9 +89,9 @@ if (-d $download_dir) {
 }
 print GREEN sprintf("%-30s", "Authorizaion:");
 #$DB::single=1;
-$curlout = `curl -i -c $cookie_fname -A "$ua" "https://login.vk.com/?act=login" -H "origin: https://vk.com" -H "accept-encoding: gzip, deflate" -H "accept-language: en-US,en;q=0.8" -H "content-type: application/x-www-form-urlencoded" -H "accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8" -H "cache-control: max-age=0" -H "cookie: remixdt=0; remixlang=0; remixseenads=2; remixlhk=bf2d1843e55161340b; remixflash=18.0.0; remixscreen_depth=24" --data "act=login&role=al_frame&expire=&captcha_sid=&captcha_key=&_origin=https"%"3A"%"2F"%"2Fvk.com&ip_h=ea277a92d28dda8c81&lg_h=570421fe6130338962&email=$email&pass=$pass" 2>&1`;
-_print_debug($curlout) if $debug;
-if ($curlout =~ m/Location\:\s+(.+hash=.+)/) {
+my $auth_page = `curl -i -c $cookie_fname -A "$ua" "https://login.vk.com/?act=login" -H "origin: https://vk.com" -H "accept-encoding: gzip, deflate" -H "accept-language: en-US,en;q=0.8" -H "content-type: application/x-www-form-urlencoded" -H "accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8" -H "cache-control: max-age=0" -H "cookie: remixdt=0; remixlang=0; remixseenads=2; remixlhk=bf2d1843e55161340b; remixflash=18.0.0; remixscreen_depth=24" --data "act=login&role=al_frame&expire=&captcha_sid=&captcha_key=&_origin=https"%"3A"%"2F"%"2Fvk.com&ip_h=ea277a92d28dda8c81&lg_h=570421fe6130338962&email=$email&pass=$pass" 2>&1`;
+_print_debug($auth_page) if $debug;
+if ($auth_page =~ m/Location\:\s+(.+hash=.+)/) {
     $auth_loc = $1;
     $auth_loc =~ s/\r|\n//;
 	sleep 1;
@@ -99,14 +99,15 @@ if ($curlout =~ m/Location\:\s+(.+hash=.+)/) {
 exit unless _print_ok_fail ($auth_loc, "OK", "Fail: check authorization data ($email:$pass), can't authorize with them");
 
 print GREEN sprintf("%-30s", "Opening music:");
+my $feed_page = "";
 for (my $i = 0; $i < 5; $i++) {
     sleep 1;
-	$curlout = _cmd_timeout("curl $curl_opts -b $cookie_fname -c $cookie_fname -A \"$ua\" \"$auth_loc\" 2>&1");
-	next if $curlout eq 0;
-	$curlout = _cmd_timeout("curl -v -b $cookie_fname -A \"$ua\" \"https://vk.com/feed\" 2>&1");
-	next if $curlout eq 0;
-	_print_debug($curlout) if $debug;
-	if ($curlout =~ m/id="head_music"\s+href="\/audios(\d+)/) {
+	$feed_page = _cmd_timeout("curl $curl_opts -b $cookie_fname -c $cookie_fname -A \"$ua\" \"$auth_loc\" 2>&1");
+	next if $feed_page eq 0;
+	$feed_page = _cmd_timeout("curl -v -b $cookie_fname -A \"$ua\" \"https://vk.com/feed\" 2>&1");
+	next if $feed_page eq 0;
+	_print_debug($feed_page) if $debug;
+	if ($feed_page =~ m/id="head_music"\s+href="\/audios(\d+)/) {
 		$user_id = $1;
 		$user_id =~ s/\r|\n//;
 		last;
@@ -130,19 +131,20 @@ if ($search_artist) {
 }
 
 my $music_page_downloaded = 0;
+my $music_page = "";
 for (my $i = 0; $i < 5; $i++) {
     sleep 2;
-	$curlout = _cmd_timeout($music_html_cmd);
-    _print_debug($curlout) if $debug;
-	next if $curlout eq 0;
-	if ($curlout =~ m/mp3/) {
+    $music_page = _cmd_timeout($music_html_cmd);
+    _print_debug($music_page) if $debug;
+	next if $music_page eq 0;
+	if ($music_page =~ m/mp3/) {
         $music_page_downloaded = 1;
 		last;
 	}
 }
-exit unless _print_ok_fail ($music_page_downloaded, "OK", "Fail: Can't parse vk.com main page, may be it was changed");
+exit unless _print_ok_fail ($music_page_downloaded, "OK", "Fail: Can't parse 'vk.com/audio', may be it was changed");
 
-my @music_html = split (/\n/, $curlout);
+my @music_html = split (/\n/, $music_page);
 my (@music_base, $music_src, $artist, $name);
 my $item = 1;
 #$DB::single=1;
