@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-##!/usr/bin/perl5.16
 # written by fzeulf
 # description: script for vk music download
 # info: config must be in the configfile.pm 
@@ -88,7 +87,7 @@ if (-d $download_dir) {
     }
     print GREEN " Created $full_path\n";
 }
-print GREEN "Authorizaion:";
+print GREEN sprintf("%-30s", "Authorizaion:");
 #$DB::single=1;
 $curlout = `curl -i -c $cookie_fname -A "$ua" "https://login.vk.com/?act=login" -H "origin: https://vk.com" -H "accept-encoding: gzip, deflate" -H "accept-language: en-US,en;q=0.8" -H "content-type: application/x-www-form-urlencoded" -H "accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8" -H "cache-control: max-age=0" -H "cookie: remixdt=0; remixlang=0; remixseenads=2; remixlhk=bf2d1843e55161340b; remixflash=18.0.0; remixscreen_depth=24" --data "act=login&role=al_frame&expire=&captcha_sid=&captcha_key=&_origin=https"%"3A"%"2F"%"2Fvk.com&ip_h=ea277a92d28dda8c81&lg_h=570421fe6130338962&email=$email&pass=$pass" 2>&1`;
 _print_debug($curlout) if $debug;
@@ -97,25 +96,25 @@ if ($curlout =~ m/Location\:\s+(.+hash=.+)/) {
     $auth_loc =~ s/\r|\n//;
 	sleep 1;
 }
-exit unless _print_ok_fail ($auth_loc, " OK", " Fail: check authorization data ($email:$pass), can't authorize with them");
+exit unless _print_ok_fail ($auth_loc, "OK", "Fail: check authorization data ($email:$pass), can't authorize with them");
 
-print GREEN "Opening music:";
+print GREEN sprintf("%-30s", "Opening music:");
 for (my $i = 0; $i < 5; $i++) {
+    sleep 1;
 	$curlout = _cmd_timeout("curl $curl_opts -b $cookie_fname -c $cookie_fname -A \"$ua\" \"$auth_loc\" 2>&1");
-	sleep 1 and next if $curlout eq 0;
+	next if $curlout eq 0;
 	$curlout = _cmd_timeout("curl -v -b $cookie_fname -A \"$ua\" \"https://vk.com/feed\" 2>&1");
-	sleep 1 and next if $curlout eq 0;
+	next if $curlout eq 0;
 	_print_debug($curlout) if $debug;
 	if ($curlout =~ m/id="head_music"\s+href="\/audios(\d+)/) {
 		$user_id = $1;
 		$user_id =~ s/\r|\n//;
-		sleep 1;
 		last;
 	}
 }
-exit unless _print_ok_fail ($user_id, " OK", " Fail: Can't parse vk.com main page, may be it was changed");
+exit unless _print_ok_fail ($user_id, "OK", "Fail: Can't parse vk.com main page, may be it was changed");
 
-print GREEN "Loading music list:\n";
+print GREEN sprintf("%-30s", "Loading music list:");
 if ($search) {
     $search =~ s/([\W])/"%" . uc(sprintf("%2.2x",ord($1)))/eg;
 }
@@ -130,15 +129,19 @@ if ($search_artist) {
     $music_html_cmd = "curl -v -b $cookie_fname -A \"$ua\" -H \"Accept-Language:en-US,en;q=0.8\" \"https://vk.com/audios$user_id\" 2>&1";
 }
 
+my $music_page_downloaded = 0;
 for (my $i = 0; $i < 5; $i++) {
+    sleep 2;
 	$curlout = _cmd_timeout($music_html_cmd);
-	sleep 1 and next if $curlout eq 0;
-	if ($curlout =~ m/audios$user_id/) {
-		sleep 1;
+    _print_debug($curlout) if $debug;
+	next if $curlout eq 0;
+	if ($curlout =~ m/mp3/) {
+        $music_page_downloaded = 1;
 		last;
 	}
 }
-_print_debug($curlout) if $debug;
+exit unless _print_ok_fail ($music_page_downloaded, "OK", "Fail: Can't parse vk.com main page, may be it was changed");
+
 my @music_html = split (/\n/, $curlout);
 my (@music_base, $music_src, $artist, $name);
 my $item = 1;
@@ -252,18 +255,20 @@ unlink $cookie_fname;
 sub _cmd_timeout {
     my $cmd = shift;
     my $timeout = shift; # timeout in seconds
-    $timeout = defined $timeout ? $timeout : 10;    
+    $timeout = defined $timeout ? $timeout : 15;    
 
 	my $output = "";
     eval {
         local $SIG{ALRM} = sub { die "timeout_alarm\n" };
         alarm $timeout;
+        print ".";
         $output = `$cmd`;
         alarm 0;
     };
     if (defined($@)) {
         if ($@ eq "timeout_alarm\n") {
-			_print_ok_fail (0, "", " Fail: '$cmd' not finished in $timeout sec. Output: '$@ $output'");
+            chomp($@);
+			_print_ok_fail (0, "", "\nFail: '$cmd' not finished in $timeout sec. Output: '$@ $output'");
             return 0;
         }
     }
@@ -447,6 +452,7 @@ sub _json_parser {
     my ($block_start, @music_base, $param_start, $param, @block_params);
     my $music_num = 1;
     my $prev_smb = "";
+    print "\n";
     foreach my $smb (@string) {
         if (($smb eq "]")&&($prev_smb eq "]")) {
             last;
