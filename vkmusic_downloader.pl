@@ -1,4 +1,5 @@
-#!/bin/env perl
+#!/usr/bin/perl
+##!/usr/bin/perl5.16
 # written by fzeulf
 # description: script for vk music download
 # info: config must be in the configfile.pm 
@@ -6,6 +7,7 @@
 use strict;
 use warnings;
 use utf8;
+binmode STDOUT, ":utf8";
 use threads;
 use threads::shared;
 use FindBin qw( $Bin );
@@ -351,7 +353,7 @@ sub _print_debug {
 
     print YELLOW "\n" . "-" x 80 . "\n";
     print YELLOW "$curlout";
-    print YELLOW "-" x 80 . "\n";
+    print YELLOW "\n" . "-" x 80 . "\n";
 }
 
 sub _print_music_string {
@@ -374,15 +376,16 @@ sub _print_music_string {
 sub _html_parser {
     my $string = shift;
     my $name;
-    #print MAGENTA "\n->>$string-\n";
-    if (($string =~ m/([^\<]*)/) and ($string !~ m/<a class=/)) { # name without link
+    _print_debug($string) if $debug;
+    if (($string =~ m/([^\<]*)/) and ($string !~ m/<a class=/) and ($string !~ m/<span>/)) { # name without link
+        _print_debug("NO TAG: $1") if $debug;
         $name = $1;
     } elsif ($string =~ m/(<span>.+)/) { # formatted by span tags name
         $name = _tags_parser ("<", ">", "</span><span", $1);
-    #    print "\nSPAN -$1-$name\n";
+        _print_debug("SPAN: $1") if $debug;
     } elsif ($string =~ m/<a[^>]*>(.+)/) { # name is link
         $name = _tags_parser ("<", ">", "</a>", $1);
-    #    print "\nA -$1-$name\n";
+        _print_debug("A: $1") if $debug;
     } else {
         print RED "-$string-\n";
     }
