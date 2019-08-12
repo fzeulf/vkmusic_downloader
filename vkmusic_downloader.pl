@@ -23,7 +23,7 @@ use constant DELIM_S => '-' x 80;
 $| = 1;
 
 my $VERSION = "1.5 (Aug 2016)";
-my ($help, $curl_opts, $auth_loc, $user_id, $search, $search_artist, $all_user_music, $show_playlists);
+my ($help, $curl_opts, $user_id, $search, $search_artist, $all_user_music, $show_playlists);
 my ($succ_op, $failed_op) :shared;
 my $debug = 0;
 $succ_op = 0;
@@ -37,9 +37,9 @@ _print_help() if ($help);
 my $ch_curl = `which curl`;
 chomp ($ch_curl);
 if ($debug) {
-    $curl_opts = "-i -v";
+    $curl_opts = "-iL -v";
 } else {
-    $curl_opts = "-s";
+    $curl_opts = "-sL";
 }
 
 if (not $ch_curl) {
@@ -88,13 +88,16 @@ if (-d $download_dir) {
     print GREEN " Created $full_path\n";
 }
 print GREEN sprintf("%-30s", "Authorizaion:");
-#$DB::single=1;
 my $auth_page = `curl -i -c $cookie_fname -A "$ua" "https://login.vk.com/?act=login" -H "origin: https://vk.com" -H "accept-encoding: gzip, deflate" -H "accept-language: en-US,en;q=0.8" -H "content-type: application/x-www-form-urlencoded" -H "accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8" -H "cache-control: max-age=0" -H "cookie: remixdt=0; remixlang=0; remixseenads=2; remixlhk=bf2d1843e55161340b; remixflash=18.0.0; remixscreen_depth=24" --data "act=login&role=al_frame&expire=&captcha_sid=&captcha_key=&_origin=https"%"3A"%"2F"%"2Fvk.com&ip_h=ea277a92d28dda8c81&lg_h=570421fe6130338962&email=$email&pass=$pass" 2>&1`;
 _print_debug($auth_page) if $debug;
-if ($auth_page =~ m/Location\:\s+(.+hash=.+)/) {
-    $auth_loc = $1;
-    $auth_loc =~ s/\r|\n//;
-	sleep 1;
+#$DB::single=1;
+my $auth_loc;
+foreach my $string (split(/\n/, $auth_page)) {
+    if ($string =~ m/^.ocation\:\s+(.+)/) {
+        $auth_loc = $string;
+        $auth_loc =~ s/\r|\n//;
+        sleep 1;
+    }
 }
 exit unless _print_ok_fail ($auth_loc, "OK", "Fail: check authorization data ($email:$pass), can't authorize with them");
 
